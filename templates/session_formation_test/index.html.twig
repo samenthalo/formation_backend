@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SessionFormation Test{% endblock %}
+
+{% block body %}
+    <h1>Liste des Sessions de Formation</h1>
+
+    {% if sessions is not empty %}
+        <ul>
+            {% for session in sessions %}
+                <li>
+                    <strong>{{ session.getTitre() }}</strong><br>
+                    Date de début: {{ session.getDateDebut()|date('Y-m-d') }}<br>
+                    Lieu: {{ session.getLieu() }}<br>
+                    Statut: {{ session.getStatut() }}<br>
+                    Nombre d'inscrits: {{ session.getNbInscrits() }}<br>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucune session trouvée.</p>
+    {% endif %}
+{% endblock %}
