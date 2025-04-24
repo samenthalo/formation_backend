@@ -1,0 +1,37 @@
+monolog:
+    # Définir les canaux
+    channels: ['app']
+
+    handlers:
+        # Handler principal pour les logs de l'application
+        main:
+            type: stream
+            path: "%kernel.logs_dir%/%kernel.environment%.log"  # Log fichier
+            level: debug  # Niveau de log
+            channels: ["app"]
+
+        # Handler pour afficher les logs dans la console (lors de l'exécution en CLI)
+        console:
+            type: console
+            channels: ["app"]
+
+        # Handler pour les erreurs critiques envoyées par email
+        fingers_crossed:
+            type: fingers_crossed
+            action_level: error
+            handler: nested
+            channels: ["app"]
+
+        # Handler pour logs de niveau "error" et supérieur envoyés dans un autre fichier
+        nested:
+            type: stream
+            path: "%kernel.logs_dir%/nested.log"
+            level: error
+            channels: ["app"]
+
+        # Handler pour logs au format JSON
+        json:
+            type: stream
+            path: "%kernel.logs_dir%/log.json"
+            level: info
+            formatter: monolog.formatter.json
