@@ -79,13 +79,17 @@ class Formation
     #[Groups(['formation:read'])]
     private ?string $methodes_evaluation = null;
 
-    #[ORM\Column(type: "boolean", nullable: true)]
+    #[ORM\Column(name: '`accessible`', type: "boolean", nullable: true)]
     #[Groups(['formation:read'])]
     private ?bool $accessible = null;
 
     #[ORM\Column(type: "decimal", precision: 5, scale: 2, nullable: true)]
     #[Groups(['formation:read'])]
     private ?float $taux_tva = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])] // ajoute ça si tu utilises la serialization
+    private ?string $welcomeBooklet = null;
 
     // Getters & Setters
 
@@ -291,4 +295,16 @@ class Formation
         $this->taux_tva = $tauxTva;
         return $this;
     }
+
+    public function getWelcomeBooklet(): ?string
+{
+    return $this->welcomeBooklet;
+}
+
+public function setWelcomeBooklet(?string $welcomeBooklet): self
+{
+    $this->welcomeBooklet = $welcomeBooklet;
+
+    return $this;
+}
 }
