@@ -3,28 +3,25 @@
 namespace App\Entity;
 
 use App\Repository\SessionFormationRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SessionFormationRepository::class)]
-#[ORM\Table(name: "sessionformation")] 
+#[ORM\Table(name: "sessionformation")]
 class SessionFormation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: "integer")]
+    #[ORM\Column(type: "integer", name: "id_session")]
     private ?int $id_session = null;
+    
 
     #[ORM\Column(type: "string", length: 255)]
     private string $titre;
 
     #[ORM\Column(type: "text", nullable: true)]
     private ?string $description = null;
-
-    #[ORM\Column(type: "date")]
-    private \DateTimeInterface $date_debut;
-
-    #[ORM\Column(type: "date")]
-    private \DateTimeInterface $date_fin;
 
     #[ORM\Column(type: "string", length: 255, nullable: true)]
     private ?string $lieu = null;
@@ -38,9 +35,40 @@ class SessionFormation
     #[ORM\Column(type: "integer")]
     private int $nb_inscrits;
 
+    #[ORM\Column(type: "string", length: 100, nullable: true)]
+    private ?string $responsable_nom = null;
+
+    #[ORM\Column(type: "string", length: 100, nullable: true)]
+    private ?string $responsable_prenom = null;
+
+    #[ORM\Column(type: "string", length: 20, nullable: true)]
+    private ?string $responsable_telephone = null;
+
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $responsable_email = null;
+
+    #[ORM\Column(type: "string", length: 20, nullable: true)]
+    private ?string $mode = null;
+    
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $lien = null;
+
+
     #[ORM\ManyToOne(targetEntity: Formation::class)]
     #[ORM\JoinColumn(name: "id_formation", referencedColumnName: "id_formation", nullable: false, onDelete: "CASCADE")]
-    private Formation $formation;
+    private ?Formation $formation = null;
+
+    #[ORM\ManyToOne(targetEntity: Formateur::class)]
+    #[ORM\JoinColumn(name: "id_formateur", referencedColumnName: "id_formateur", nullable: true, onDelete: "SET NULL")]
+    private ?Formateur $formateur = null;
+
+    #[ORM\OneToMany(mappedBy: "sessionFormation", targetEntity: SessionCreneau::class, cascade: ["persist", "remove"])]
+    private Collection $creneaux;
+
+    public function __construct()
+    {
+        $this->creneaux = new ArrayCollection();
+    }
 
     // Getters & Setters
 
@@ -48,6 +76,72 @@ class SessionFormation
     {
         return $this->id_session;
     }
+
+    public function getResponsableNom(): ?string
+{
+    return $this->responsable_nom;
+}
+
+public function setResponsableNom(?string $responsableNom): self
+{
+    $this->responsable_nom = $responsableNom;
+    return $this;
+}
+
+public function getResponsablePrenom(): ?string
+{
+    return $this->responsable_prenom;
+}
+
+public function setResponsablePrenom(?string $responsablePrenom): self
+{
+    $this->responsable_prenom = $responsablePrenom;
+    return $this;
+}
+
+public function getResponsableTelephone(): ?string
+{
+    return $this->responsable_telephone;
+}
+
+public function setResponsableTelephone(?string $responsableTelephone): self
+{
+    $this->responsable_telephone = $responsableTelephone;
+    return $this;
+}
+
+public function getResponsableEmail(): ?string
+{
+    return $this->responsable_email;
+}
+
+public function setResponsableEmail(?string $responsableEmail): self
+{
+    $this->responsable_email = $responsableEmail;
+    return $this;
+}
+
+public function getMode(): ?string
+{
+    return $this->mode;
+}
+
+public function setMode(?string $mode): self
+{
+    $this->mode = $mode;
+    return $this;
+}
+
+public function getLien(): ?string
+{
+    return $this->lien;
+}
+
+public function setLien(?string $lien): self
+{
+    $this->lien = $lien;
+    return $this;
+}
 
     public function getTitre(): string
     {
@@ -68,28 +162,6 @@ class SessionFormation
     public function setDescription(?string $description): self
     {
         $this->description = $description;
-        return $this;
-    }
-
-    public function getDateDebut(): \DateTimeInterface
-    {
-        return $this->date_debut;
-    }
-
-    public function setDateDebut(\DateTimeInterface $dateDebut): self
-    {
-        $this->date_debut = $dateDebut;
-        return $this;
-    }
-
-    public function getDateFin(): \DateTimeInterface
-    {
-        return $this->date_fin;
-    }
-
-    public function setDateFin(\DateTimeInterface $dateFin): self
-    {
-        $this->date_fin = $dateFin;
         return $this;
     }
 
@@ -137,7 +209,7 @@ class SessionFormation
         return $this;
     }
 
-    public function getFormation(): Formation
+    public function getFormation(): ?Formation
     {
         return $this->formation;
     }
@@ -147,4 +219,46 @@ class SessionFormation
         $this->formation = $formation;
         return $this;
     }
+
+    public function getFormateur(): ?Formateur
+    {
+        return $this->formateur;
+    }
+
+    public function setFormateur(?Formateur $formateur): self
+    {
+        $this->formateur = $formateur;
+        return $this;
+    }
+
+    /**
+     * @return Collection|SessionCreneau[]
+     */
+    public function getCreneaux(): Collection
+    {
+        return $this->creneaux;
+    }
+
+    public function addCreneau(SessionCreneau $creneau): self
+    {
+        if (!$this->creneaux->contains($creneau)) {
+            $this->creneaux[] = $creneau;
+            $creneau->setSessionFormation($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCreneau(SessionCreneau $creneau): self
+    {
+        if ($this->creneaux->removeElement($creneau)) {
+            // set the owning side to null (unless already changed)
+            if ($creneau->getSessionFormation() === $this) {
+                $creneau->setSessionFormation(null);
+            }
+        }
+
+        return $this;
+    }
 }
+

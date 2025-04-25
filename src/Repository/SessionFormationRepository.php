@@ -20,4 +20,13 @@ class SessionFormationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    // Ajouter une méthode pour récupérer les sessions liées à une formation spécifique via id_formation
+    public function findByFormationId(int $formationId)
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.formation = :formation') // Utilise l'objet Formation lié
+            ->setParameter('formation', $formationId) // Passer l'ID de la formation ici
+            ->getQuery()
+            ->getResult();
+    }
 }
