@@ -1,5 +1,6 @@
 <?php
 
+// src/Repository/InscriptionRepository.php
 namespace App\Repository;
 
 use App\Entity\Inscription;
@@ -13,5 +14,23 @@ class InscriptionRepository extends ServiceEntityRepository
         parent::__construct($registry, Inscription::class);
     }
 
-    // Ajoute ici des méthodes personnalisées si nécessaire
+    public function findAllStagiaires()
+    {
+        return $this->findAll();
+    }
+        /**
+     * Find inscriptions by session ID.
+     *
+     * @param int $id_session
+     * @return Inscription[]
+     */
+    public function findBySession(int $id_session): array
+    {
+        return $this->createQueryBuilder('i')
+            ->andWhere('i.sessionFormation = :session')
+            ->setParameter('session', $id_session)
+            ->getQuery()
+            ->getResult();
+    }
 }
+
