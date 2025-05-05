@@ -1,9 +1,13 @@
 <?php
+// src/Entity/Inscription.php
 
 namespace App\Entity;
 
-use App\Repository\InscriptionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\InscriptionRepository;
+use App\Entity\Stagiaire;
+use App\Entity\SessionFormation;
+
 
 #[ORM\Entity(repositoryClass: InscriptionRepository::class)]
 class Inscription
@@ -11,85 +15,46 @@ class Inscription
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    private ?int $id_inscription = null;
+    private $id_inscription;
 
-    #[ORM\Column(type: "string", length: 100)]
-    private ?string $nom_stagiaire = null;
+    #[ORM\ManyToOne(targetEntity: Stagiaire::class)]
+    #[ORM\JoinColumn(name: "id_stagiaire", referencedColumnName: "id_stagiaire", nullable: false)]
+    private $stagiaire;
 
-    #[ORM\Column(type: "string", length: 100)]
-    private ?string $prenom_stagiaire = null;
+    #[ORM\ManyToOne(targetEntity: SessionFormation::class)]
+    #[ORM\JoinColumn(name: "id_session", referencedColumnName: "id_session", nullable: false, onDelete: "CASCADE")]
+    private $sessionFormation;
+    
 
-    #[ORM\Column(type: "string", length: 20, nullable: true)]
-    private ?string $telephone_stagiaire = null;
-
-    #[ORM\Column(type: "string", length: 100, nullable: true)]
-    private ?string $email_stagiaire = null;
-
-    #[ORM\Column(type: "integer")]
-    private ?int $id_session = null;
-
-    #[ORM\Column(type: "string", length: 50)]
-    private ?string $statut = null;
-
-    // Getters & Setters
+    #[ORM\Column(type: "string", length: 255)]
+    private $statut;
 
     public function getIdInscription(): ?int
     {
         return $this->id_inscription;
     }
 
-    public function getNomStagiaire(): ?string
+    public function getStagiaire(): ?Stagiaire
     {
-        return $this->nom_stagiaire;
+        return $this->stagiaire;
     }
 
-    public function setNomStagiaire(string $nomStagiaire): self
+    public function setStagiaire(?Stagiaire $stagiaire): self
     {
-        $this->nom_stagiaire = $nomStagiaire;
+        $this->stagiaire = $stagiaire;
+
         return $this;
     }
 
-    public function getPrenomStagiaire(): ?string
+    public function getSessionFormation(): ?SessionFormation
     {
-        return $this->prenom_stagiaire;
+        return $this->sessionFormation;
     }
 
-    public function setPrenomStagiaire(string $prenomStagiaire): self
+    public function setSessionFormation(?SessionFormation $session): self
     {
-        $this->prenom_stagiaire = $prenomStagiaire;
-        return $this;
-    }
+        $this->sessionFormation = $session;
 
-    public function getTelephoneStagiaire(): ?string
-    {
-        return $this->telephone_stagiaire;
-    }
-
-    public function setTelephoneStagiaire(?string $telephoneStagiaire): self
-    {
-        $this->telephone_stagiaire = $telephoneStagiaire;
-        return $this;
-    }
-
-    public function getEmailStagiaire(): ?string
-    {
-        return $this->email_stagiaire;
-    }
-
-    public function setEmailStagiaire(?string $emailStagiaire): self
-    {
-        $this->email_stagiaire = $emailStagiaire;
-        return $this;
-    }
-
-    public function getIdSession(): ?int
-    {
-        return $this->id_session;
-    }
-
-    public function setIdSession(int $idSession): self
-    {
-        $this->id_session = $idSession;
         return $this;
     }
 
@@ -101,6 +66,7 @@ class Inscription
     public function setStatut(string $statut): self
     {
         $this->statut = $statut;
+
         return $this;
     }
 }
