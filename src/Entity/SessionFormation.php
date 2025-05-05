@@ -65,9 +65,14 @@ class SessionFormation
     #[ORM\OneToMany(mappedBy: "sessionFormation", targetEntity: SessionCreneau::class, cascade: ["persist", "remove"])]
     private Collection $creneaux;
 
+    #[ORM\OneToMany(mappedBy: "sessionFormation", targetEntity: Inscription::class, cascade: ["persist", "remove"])]
+    private Collection $inscriptions;
+    
+
     public function __construct()
     {
         $this->creneaux = new ArrayCollection();
+        $this->inscriptions = new ArrayCollection();
     }
 
     // Getters & Setters
@@ -255,6 +260,38 @@ public function setLien(?string $lien): self
             // set the owning side to null (unless already changed)
             if ($creneau->getSessionFormation() === $this) {
                 $creneau->setSessionFormation(null);
+            }
+        }
+
+        return $this;
+    }
+
+    // Méthodes pour gérer la relation avec Inscription
+
+    /**
+     * @return Collection|Inscription[]
+     */
+    public function getInscriptions(): Collection
+    {
+        return $this->inscriptions;
+    }
+
+    public function addInscription(Inscription $inscription): self
+    {
+        if (!$this->inscriptions->contains($inscription)) {
+            $this->inscriptions[] = $inscription;
+            $inscription->setSessionFormation($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInscription(Inscription $inscription): self
+    {
+        if ($this->inscriptions->removeElement($inscription)) {
+            // set the owning side to null (unless already changed)
+            if ($inscription->getSessionFormation() === $this) {
+                $inscription->setSessionFormation(null);
             }
         }
 
