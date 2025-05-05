@@ -4,6 +4,9 @@ namespace App\Entity;
 
 use App\Repository\FormateurRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use App\Entity\SessionFormation;
 
 #[ORM\Entity(repositoryClass: FormateurRepository::class)]
 class Formateur
@@ -40,8 +43,21 @@ class Formateur
     #[ORM\Column(type: "datetime", nullable: true)]
     private ?\DateTimeInterface $mis_a_jour = null;
 
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $linkedin = null;
+
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $cv_path = null;
+
+    #[ORM\OneToMany(mappedBy: "formateur", targetEntity: SessionFormation::class)]
+    private Collection $sessions;
+
     // Getters & Setters
 
+    public function __construct()
+{
+    $this->sessions = new ArrayCollection();
+}
     public function getIdFormateur(): ?int
     {
         return $this->id_formateur;
@@ -145,4 +161,53 @@ class Formateur
         $this->mis_a_jour = $misAJour;
         return $this;
     }
+
+        public function getLinkedin(): ?string
+    {
+        return $this->linkedin;
+    }
+
+    public function setLinkedin(?string $linkedin): self
+    {
+        $this->linkedin = $linkedin;
+        return $this;
+    }
+
+    public function getCvPath(): ?string
+    {
+        return $this->cv_path;
+    }
+
+    public function setCvPath(?string $cvPath): self
+    {
+        $this->cv_path = $cvPath;
+        return $this;
+    }
+
+    public function getSessions(): Collection
+{
+    return $this->sessions;
+}
+
+public function addSession(SessionFormation $session): self
+{
+    if (!$this->sessions->contains($session)) {
+        $this->sessions[] = $session;
+        $session->setFormateur($this);
+    }
+
+    return $this;
+}
+
+public function removeSession(SessionFormation $session): self
+{
+    if ($this->sessions->removeElement($session)) {
+        if ($session->getFormateur() === $this) {
+            $session->setFormateur(null);
+        }
+    }
+
+    return $this;
+}
+
 }
