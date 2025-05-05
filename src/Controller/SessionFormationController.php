@@ -25,7 +25,7 @@ class SessionFormationController extends AbstractController
     {
         $sessions = $sessionFormationRepository->findAllSessions();
         $sessionsData = [];
-    
+        
         foreach ($sessions as $session) {
             $formateur = $session->getFormateur();
     
@@ -40,6 +40,7 @@ class SessionFormationController extends AbstractController
                     'id_formateur' => $creneau->getFormateur() ? $creneau->getFormateur()->getIdFormateur() : null,
                 ];
             }
+    
     
             $sessionsData[] = [
                 'id_session' => $session->getIdSession(),
@@ -69,6 +70,7 @@ class SessionFormationController extends AbstractController
     
         return new JsonResponse($sessionsData);
     }
+    
     
 
     #[Route('/sessionformation/formation/{formationId}', name: 'get_sessions_by_formation', methods: ['GET'])]
