@@ -104,7 +104,7 @@ class InscriptionController extends AbstractController
         foreach ($ids as $id) {
             $inscription = $inscriptionRepository->findOneBy([
                 'stagiaire' => $id,
-                'session' => $id_session
+                'sessionFormation' => $id_session
             ]);
 
             if ($inscription) {
