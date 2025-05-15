@@ -1,9 +1,12 @@
 <?php
 // src/Entity/Question.php
+
 namespace App\Entity;
 
 use App\Repository\QuestionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity(repositoryClass: QuestionRepository::class)]
 class Question
@@ -13,7 +16,7 @@ class Question
     #[ORM\Column(type: "integer")]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Evaluation::class)]
+    #[ORM\ManyToOne(targetEntity: Evaluation::class, inversedBy: "questions")]
     #[ORM\JoinColumn(name: "id_evaluation", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
     private ?Evaluation $evaluation = null;
 
@@ -23,14 +26,22 @@ class Question
     #[ORM\Column(type: "string", length: 50, nullable: true)]
     private ?string $type = null; // choix_unique, choix_multiple, note, etc.
 
-    #[ORM\Column(type: "text", nullable: true)]
-    private ?string $options = null;
+    #[ORM\Column(type: "json", nullable: true)]
+    private ?array $options = null;
 
     #[ORM\Column(type: "integer", nullable: true)]
     private ?int $minNote = null;
 
     #[ORM\Column(type: "integer", nullable: true)]
     private ?int $maxNote = null;
+
+    #[ORM\OneToMany(targetEntity: Reponse::class, mappedBy: "question", cascade: ["persist", "remove"])]
+    private Collection $reponses;
+
+    public function __construct()
+    {
+        $this->reponses = new ArrayCollection();
+    }
 
     // Getters et Setters
 
@@ -72,12 +83,12 @@ class Question
         return $this;
     }
 
-    public function getOptions(): ?string
+    public function getOptions(): ?array
     {
         return $this->options;
     }
 
-    public function setOptions(?string $options): self
+    public function setOptions(?array $options): self
     {
         $this->options = $options;
         return $this;
@@ -102,6 +113,33 @@ class Question
     public function setMaxNote(?int $maxNote): self
     {
         $this->maxNote = $maxNote;
+        return $this;
+    }
+
+    public function getReponses(): Collection
+    {
+        return $this->reponses;
+    }
+
+    public function addReponse(Reponse $reponse): self
+    {
+        if (!$this->reponses->contains($reponse)) {
+            $this->reponses[] = $reponse;
+            $reponse->setQuestion($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReponse(Reponse $reponse): self
+    {
+        if ($this->reponses->removeElement($reponse)) {
+            // set the owning side to null (unless already changed)
+            if ($reponse->getQuestion() === $this) {
+                $reponse->setQuestion(null);
+            }
+        }
+
         return $this;
     }
 }

@@ -1,5 +1,6 @@
 <?php
 // src/Entity/Reponse.php
+
 namespace App\Entity;
 
 use App\Repository\ReponseRepository;
@@ -13,7 +14,7 @@ class Reponse
     #[ORM\Column(type: "integer")]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Question::class)]
+    #[ORM\ManyToOne(targetEntity: Question::class, inversedBy: "reponses")]
     #[ORM\JoinColumn(name: "id_question", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
     private ?Question $question = null;
 
