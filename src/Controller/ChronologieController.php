@@ -46,27 +46,44 @@ class ChronologieController extends AbstractController
     }
     
 
-    // Créer une nouvelle chronologie
-    #[Route('/', name: 'chronologie_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager): Response
-    {
-        // Récupérer les données envoyées en JSON
+  #[Route('/', name: 'chronologie_create', methods: ['POST'])]
+public function create(Request $request, EntityManagerInterface $entityManager): Response
+{
+    try {
         $data = json_decode($request->getContent(), true);
 
-        // Créer une nouvelle instance de Chronologie
+        if (!$data) {
+            return new JsonResponse(['error' => 'Données JSON invalides'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Vérifier les champs obligatoires
+        if (!isset($data['idSession'], $data['dateEvenement'], $data['typeEvenement'])) {
+            return new JsonResponse(['error' => 'Champs obligatoires manquants'], Response::HTTP_BAD_REQUEST);
+        }
+
         $chronologie = new Chronologie();
         $chronologie->setIdSession($data['idSession']);
-        $chronologie->setDateEvenement(new \DateTime($data['dateEvenement']));
+
+        try {
+            $chronologie->setDateEvenement(new \DateTime($data['dateEvenement']));
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Format de date invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
         $chronologie->setTypeEvenement($data['typeEvenement']);
         $chronologie->setDescription($data['description'] ?? null);
 
-        // Sauvegarder dans la base de données
         $entityManager->persist($chronologie);
         $entityManager->flush();
 
-        // Retourner une réponse avec l'ID de la chronologie créée
         return new JsonResponse(['message' => 'Chronologie créée', 'id' => $chronologie->getId()], Response::HTTP_CREATED);
+    } catch (\Exception $e) {
+        // Log pour debug
+        error_log('Erreur création chronologie: ' . $e->getMessage());
+        return new JsonResponse(['error' => 'Erreur serveur'], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
+}
+
 
     // Afficher une chronologie spécifique
     #[Route('/{id}', name: 'chronologie_show', methods: ['GET'])]
