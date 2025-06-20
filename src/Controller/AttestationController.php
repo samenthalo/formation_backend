@@ -92,6 +92,7 @@ public function generer(int $id, InscriptionRepository $inscriptionRepository): 
             'nom' => $stagiaire->getNomStagiaire(),
             'prenom' => $stagiaire->getPrenomStagiaire(),
             'entreprise' => $stagiaire->getEntrepriseStagiaire(),
+            'email' => $stagiaire->getEmailStagiaire(),
         ];
     }
 
