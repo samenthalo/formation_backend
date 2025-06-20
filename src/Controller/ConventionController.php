@@ -48,7 +48,6 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
     #[Route('/convention/prefill/{idSessionFormation}', name: 'prefill_convention', methods: ['GET'])]
     public function getPrefillData(int $idSessionFormation, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Récupérer la session de formation
         $sessionFormation = $entityManager->getRepository(SessionFormation::class)->find($idSessionFormation);
         if (!$sessionFormation) {
             return new JsonResponse(['error' => 'Session formation non trouvée'], 404);
@@ -59,11 +58,6 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
             return new JsonResponse(['error' => 'Formation liée non trouvée'], 404);
         }
 
-        // Récupérer le template
-        $template = $entityManager->getRepository(Template::class)->findOneBy([], ['dateModification' => 'DESC']);
-        $templateContent = $template ? $template->getContenu() : null;
-
-        // --- Créneaux ---
         $creneaux = $entityManager->getRepository(SessionCreneau::class)->findBy([
             'sessionFormation' => $sessionFormation
         ]);
@@ -77,7 +71,6 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
             ];
         }, $creneaux);
 
-        // --- Participants inscrits ---
         $inscriptions = $entityManager->getRepository(Inscription::class)->findBy([
             'sessionFormation' => $sessionFormation
         ]);
@@ -96,7 +89,6 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
             }
         }
 
-        // --- Données à retourner ---
         return $this->json([
             'titreFormation' => $formation->getTitre(),
             'descriptionFormation' => $formation->getDescription(),
@@ -112,10 +104,10 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
             'statutSession' => $sessionFormation->getStatut(),
             'nbInscrits' => $sessionFormation->getNbInscrits(),
             'creneaux' => $creneauxData,
-            'participants' => $participantsData,
-            'template' => $templateContent
+            'participants' => $participantsData
         ]);
     }
+
 
 #[Route('/convention/upload', name: 'upload_convention_pdf', methods: ['POST'])]
 public function uploadConventionPdf(Request $request, EntityManagerInterface $entityManager): JsonResponse
