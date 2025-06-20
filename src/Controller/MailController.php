@@ -35,10 +35,10 @@ class MailController extends AbstractController
 
         return new JsonResponse(['message' => 'Attestation envoyée avec succès']);
     }
-
+    // Route pour envoyer une feuille de présence par email
     #[Route('/envoyer-presence', name: 'envoyer_presence', methods: ['POST'])]
     public function envoyerPresence(Request $request, MailerInterface $mailer): JsonResponse
-    {
+    {   // Récupérez les données de la requête
         $emailCible = $request->request->get('email');
         $messagePerso = $request->request->get('message', 'Voici votre feuille de présence.');
         $presence = $request->files->get('presence');
@@ -46,7 +46,7 @@ class MailController extends AbstractController
         if (!$presence || $presence->getClientOriginalExtension() !== 'pdf') {
             return new JsonResponse(['error' => 'Fichier feuille de présence manquant ou invalide'], 400);
         }
-
+        // Créez l'email avec la feuille de présence en pièce jointe
         $email = (new Email())
             ->from('stage@monprojet.dev')
             ->to($emailCible)

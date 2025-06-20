@@ -19,16 +19,18 @@ class ZohoController extends AbstractController
         $this->logger = $logger;
         $this->zohoSignService = $zohoSignService;
     }
-
+    // Route pour initier le processus OAuth avec Zoho
     #[Route('/zoho/callback', name: 'zoho_callback', methods: ['GET'])]
     public function callback(Request $request): Response
     {
+        // Récupérer le code d'autorisation depuis la requête
         $code = $request->query->get('code');
 
+        // Vérifier si le code est présent
         if (!$code) {
             return new Response('Code manquant', Response::HTTP_BAD_REQUEST);
         }
-
+        // Log the received code
         try {
             $accessToken = $this->zohoSignService->getAccessToken();
             $this->logger->info('Access Token récupéré avec succès', ['access_token' => $accessToken]);

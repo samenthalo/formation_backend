@@ -26,7 +26,7 @@ class Attestation
     #[ORM\Column(type:"datetime")]
     private $dateGeneration;
 
-    // Getters & setters ...
+    // Getters & setters
 
     public function getId(): ?int
     {

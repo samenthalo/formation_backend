@@ -37,7 +37,7 @@ class FormateurController extends AbstractController
                         'heure_fin' => $creneau->getHeureFin()->format('H:i'),
                     ];
                 }
-                
+                // Ajouter les données de la session
                 $sessionsData[] = [
                     'id_session' => $session->getIdSession(),
                     'titre' => $session->getTitre(),
@@ -48,7 +48,7 @@ class FormateurController extends AbstractController
                     'creneaux' => $creneauxData, // Ajouter les créneaux ici
                 ];
             }
-            
+            // Ajouter les données du formateur
             $data[] = [
                 'id_formateur' => $formateur->getIdFormateur(),
                 'nom' => $formateur->getNom(),
@@ -70,10 +70,11 @@ class FormateurController extends AbstractController
     }
     
     
-    
+    // Route pour ajouter un formateur
     #[Route('/formateur', name: 'add_formateur', methods: ['POST'])]
     public function add(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
-    {
+    {   
+        // Récupération des données du formulaire
         $nom = $request->request->get('nom');
         $prenom = $request->request->get('prenom');
         $email = $request->request->get('email');
@@ -94,7 +95,7 @@ class FormateurController extends AbstractController
             $cvFilename = uniqid() . '_' . $cvFile->getClientOriginalName();
             $cvFile->move($uploadsDir, $cvFilename);
         }
-    
+        // Créer une nouvelle entité Formateur
         $formateur = new Formateur();
         $formateur->setNom($nom);
         $formateur->setPrenom($prenom);
@@ -107,7 +108,8 @@ class FormateurController extends AbstractController
         $formateur->setMisAJour(new \DateTime());
         $formateur->setLinkedin($linkedin);
         $formateur->setCvPath($cvFilename); // Enregistre juste le nom du fichier
-    
+
+        // Validation des données
         $violations = $validator->validate($formateur);
         if (count($violations) > 0) {
             $errors = [];
@@ -119,7 +121,7 @@ class FormateurController extends AbstractController
     
         $entityManager->persist($formateur);
         $entityManager->flush();
-    
+        // Retourner une réponse JSON avec les détails du formateur créé
         return new JsonResponse([
             'message' => 'Formateur ajouté avec succès',
             'formateur' => [
@@ -139,7 +141,7 @@ class FormateurController extends AbstractController
         ], JsonResponse::HTTP_CREATED);
     }
     
-
+    // Route pour mettre à jour un formateur
     #[Route('/formateur/{id}', name: 'update_formateur', methods: ['POST'])]
     public function update(int $id, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, FormateurRepository $formateurRepository): JsonResponse
     {
@@ -213,23 +215,23 @@ class FormateurController extends AbstractController
         ]);
     }
     
+    // Route pour supprimer un formateur
+    #[Route('/formateur/{id}', name: 'delete_formateur', methods: ['DELETE'])]
+    public function delete(int $id, EntityManagerInterface $entityManager, FormateurRepository $formateurRepository): JsonResponse
+    {
+        $formateur = $formateurRepository->find($id);
 
-#[Route('/formateur/{id}', name: 'delete_formateur', methods: ['DELETE'])]
-public function delete(int $id, EntityManagerInterface $entityManager, FormateurRepository $formateurRepository): JsonResponse
-{
-    $formateur = $formateurRepository->find($id);
+        if (!$formateur) {
+            return new JsonResponse(['message' => 'Formateur non trouvé'], JsonResponse::HTTP_NOT_FOUND);
+        }
 
-    if (!$formateur) {
-        return new JsonResponse(['message' => 'Formateur non trouvé'], JsonResponse::HTTP_NOT_FOUND);
+        $entityManager->remove($formateur);
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Formateur supprimé avec succès'], JsonResponse::HTTP_OK);
     }
 
-    $entityManager->remove($formateur);
-    $entityManager->flush();
-
-    return new JsonResponse(['message' => 'Formateur supprimé avec succès'], JsonResponse::HTTP_OK);
-}
-
 
 }
 
-//
+

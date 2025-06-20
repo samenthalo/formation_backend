@@ -88,7 +88,7 @@ class Formation
     private ?float $taux_tva = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Groups(['formation:read', 'formation:write'])] // ajoute ça si tu utilises la serialization
+    #[Groups(['formation:read', 'formation:write'])] 
     private ?string $welcomeBooklet = null;
 
     // Getters & Setters

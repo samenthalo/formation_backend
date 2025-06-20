@@ -25,32 +25,33 @@ use Psr\Log\LoggerInterface;
 
 
 class AttestationController extends AbstractController
-{
+{   
+    //Route pour récupérer toutes les attestations
     #[Route('/attestations/all', name: 'attestation_list', methods: ['GET'])]
-public function getAllAttestations(AttestationRepository $attestationRepository): JsonResponse
-{
-    $attestations = $attestationRepository->findAll();
+    public function getAllAttestations(AttestationRepository $attestationRepository): JsonResponse
+    {
+        $attestations = $attestationRepository->findAll();
 
-    $data = [];
+        $data = [];
+        // Parcourir les attestations et préparer les données pour la réponse
+        foreach ($attestations as $attestation) {
+            $session = $attestation->getSession();
+            $data[] = [
+                'id' => $attestation->getId(),
+                'chemin_fichier' => $attestation->getCheminFichier(),
+                'date_generation' => $attestation->getDateGeneration()->format('Y-m-d H:i:s'),
+                'session_id' => $session ? $session->getIdSession() : null,
+                'session_description' => $session ? $session->getTitre() : null,
+            ];
+        }
 
-    foreach ($attestations as $attestation) {
-        $session = $attestation->getSession();
-        $data[] = [
-            'id' => $attestation->getId(),
-            'chemin_fichier' => $attestation->getCheminFichier(),
-            'date_generation' => $attestation->getDateGeneration()->format('Y-m-d H:i:s'),
-            'session_id' => $session ? $session->getIdSession() : null,
-            'session_description' => $session ? $session->getTitre() : null,
-        ];
+        return new JsonResponse($data);
     }
-
-    return new JsonResponse($data);
-}
-
- #[Route('/download/{filePath}', name: 'download_file', methods: ['GET'])]
+    // Route pour télécharger un fichier d'attestation
+    #[Route('/download/{filePath}', name: 'download_file', methods: ['GET'])]
     public function downloadFile(string $filePath): BinaryFileResponse
     {
-        // Assurez-vous de valider et de sécuriser le chemin du fichier pour éviter les accès non autorisés
+        // Chemin complet du fichier
         $projectDir = $this->getParameter('kernel.project_dir');
         $fullPath = $projectDir . '/public/' . $filePath;
 
@@ -68,63 +69,65 @@ public function getAllAttestations(AttestationRepository $attestationRepository)
 
         return $response;
     }
+    // Route pour générer une attestation pour une session de formation
+    #[Route('/attestation/generer/{id}', name: 'attestation_generer')]
+    public function generer(int $id, InscriptionRepository $inscriptionRepository): JsonResponse
+    {
+        $inscriptions = $inscriptionRepository->findBy(['sessionFormation' => $id]);
+        // Vérifier si des inscriptions existent pour cette session
+        if (!$inscriptions) {
+            throw $this->createNotFoundException('Aucune inscription trouvée pour cette session.');
+        }
 
-#[Route('/attestation/generer/{id}', name: 'attestation_generer')]
-public function generer(int $id, InscriptionRepository $inscriptionRepository): JsonResponse
-{
-    $inscriptions = $inscriptionRepository->findBy(['sessionFormation' => $id]);
+        $sessionFormation = $inscriptions[0]->getSessionFormation();
+        $creneaux = $sessionFormation->getCreneaux();
 
-    if (!$inscriptions) {
-        throw $this->createNotFoundException('Aucune inscription trouvée pour cette session.');
+        // Récupérer la formation liée à la session
+        $formation = $sessionFormation->getFormation();
+        $dureeHeures = $formation ? $formation->getDureeHeures() : null;
+
+        // Préparer la liste des participants
+        $participants = [];
+        foreach ($inscriptions as $inscription) {
+            $stagiaire = $inscription->getStagiaire();
+            $participants[] = [
+                'nom' => $stagiaire->getNomStagiaire(),
+                'prenom' => $stagiaire->getPrenomStagiaire(),
+                'entreprise' => $stagiaire->getEntrepriseStagiaire(),
+                'email' => $stagiaire->getEmailStagiaire(),
+            ];
+        }
+        // Préparer la liste des créneaux
+        $listeCreneaux = [];
+        foreach ($creneaux as $creneau) {
+            $listeCreneaux[] = [
+                'jour' => $creneau->getJour()->format('Y-m-d'),
+                'heureDebut' => $creneau->getHeureDebut()->format('H:i'),
+                'heureFin' => $creneau->getHeureFin()->format('H:i'),
+            ];
+        }
+
+        $descriptionSession = $sessionFormation->getDescription();
+        // Préparer la réponse
+        return new JsonResponse([
+            'session' => $descriptionSession,
+            'duree_heures' => $dureeHeures,
+            'participants' => $participants,
+            'creneaux' => $listeCreneaux,
+        ]);
     }
-
-    $sessionFormation = $inscriptions[0]->getSessionFormation();
-    $creneaux = $sessionFormation->getCreneaux();
-
-    // Récupérer la formation liée à la session
-    $formation = $sessionFormation->getFormation();
-    $dureeHeures = $formation ? $formation->getDureeHeures() : null;
-
-    $participants = [];
-    foreach ($inscriptions as $inscription) {
-        $stagiaire = $inscription->getStagiaire();
-        $participants[] = [
-            'nom' => $stagiaire->getNomStagiaire(),
-            'prenom' => $stagiaire->getPrenomStagiaire(),
-            'entreprise' => $stagiaire->getEntrepriseStagiaire(),
-            'email' => $stagiaire->getEmailStagiaire(),
-        ];
-    }
-
-    $listeCreneaux = [];
-    foreach ($creneaux as $creneau) {
-        $listeCreneaux[] = [
-            'jour' => $creneau->getJour()->format('Y-m-d'),
-            'heureDebut' => $creneau->getHeureDebut()->format('H:i'),
-            'heureFin' => $creneau->getHeureFin()->format('H:i'),
-        ];
-    }
-
-    $descriptionSession = $sessionFormation->getDescription();
-
-    return new JsonResponse([
-        'session' => $descriptionSession,
-        'duree_heures' => $dureeHeures,
-        'participants' => $participants,
-        'creneaux' => $listeCreneaux,
-    ]);
-}
+    // Route pour télécharger un fichier PDF
     #[Route('/upload', name: 'upload_pdf', methods: ['POST'])]
     public function uploadPdf(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         $uploadedFile = $request->files->get('file');
-
+        // Vérifier si un fichier a été téléchargé
         if (!$uploadedFile instanceof UploadedFile) {
             return new JsonResponse(['error' => 'No file uploaded'], Response::HTTP_BAD_REQUEST);
         }
 
         $sessionId = $request->request->get('sessionId');
-
+        // Vérifier si l'ID de session est fourni
         if (empty($sessionId)) {
             return new JsonResponse(['error' => 'Session ID is missing'], Response::HTTP_BAD_REQUEST);
         }
@@ -134,7 +137,7 @@ public function generer(int $id, InscriptionRepository $inscriptionRepository): 
         if (!file_exists($directory)) {
             mkdir($directory, 0777, true);
         }
-
+        // Générer un nom de fichier unique
         $fileName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
         $newFileName = $fileName . '-' . uniqid() . '.pdf';
 
@@ -162,27 +165,27 @@ public function generer(int $id, InscriptionRepository $inscriptionRepository): 
             return new JsonResponse(['error' => 'Failed to upload file'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
+    // Route pour supprimer une attestation
     #[Route('/attestation/delete/{id}', name: 'attestation_delete', methods: ['DELETE'])]
-public function delete(int $id, EntityManagerInterface $entityManager, AttestationRepository $attestationRepository): JsonResponse
-{
-    $attestation = $attestationRepository->find($id);
+    public function delete(int $id, EntityManagerInterface $entityManager, AttestationRepository $attestationRepository): JsonResponse
+    {
+        $attestation = $attestationRepository->find($id);
 
-    if (!$attestation) {
-        return new JsonResponse(['error' => 'Attestation non trouvée'], Response::HTTP_NOT_FOUND);
+        if (!$attestation) {
+            return new JsonResponse(['error' => 'Attestation non trouvée'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Supprimer le fichier associé si existant
+        $filePath = $this->getParameter('kernel.project_dir') . '/public/' . $attestation->getCheminFichier();
+        if (file_exists($filePath)) {
+            unlink($filePath); // supprime le fichier physique
+        }
+
+        // Supprimer l'entité attestation de la base
+        $entityManager->remove($attestation);
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Attestation supprimée avec succès'], Response::HTTP_OK);
     }
-
-    // Supprimer le fichier associé si existant
-    $filePath = $this->getParameter('kernel.project_dir') . '/public/' . $attestation->getCheminFichier();
-    if (file_exists($filePath)) {
-        unlink($filePath); // supprime le fichier physique
-    }
-
-    // Supprimer l'entité attestation de la base
-    $entityManager->remove($attestation);
-    $entityManager->flush();
-
-    return new JsonResponse(['message' => 'Attestation supprimée avec succès'], Response::HTTP_OK);
-}
 }
 

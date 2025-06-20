@@ -13,9 +13,11 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class InscriptionController extends AbstractController
 {
+    // Route pour récupérer toutes les inscriptions
     #[Route('/inscriptions', name: 'get_inscriptions', methods: ['GET'])]
     public function getInscriptions(InscriptionRepository $inscriptionRepository): JsonResponse
     {
+        // Récupérer toutes les inscriptions
         $inscriptions = $inscriptionRepository->findAll();
         $data = [];
         foreach ($inscriptions as $inscription) {
@@ -35,10 +37,11 @@ class InscriptionController extends AbstractController
         }
         return new JsonResponse($data);
     }
-
+    // Route pour récupérer les inscriptions par ID de session
     #[Route('/inscriptions/{id_session}', name: 'get_inscriptions_by_session', methods: ['GET'])]
     public function getInscriptionsBySession(int $id_session, InscriptionRepository $inscriptionRepository): JsonResponse
     {
+        // Récupérer les inscriptions pour une session spécifique
         $inscriptions = $inscriptionRepository->findBySession($id_session);
         $data = [];
         foreach ($inscriptions as $inscription) {
@@ -59,15 +62,17 @@ class InscriptionController extends AbstractController
         return new JsonResponse($data);
     }
 
+    // Route pour ajouter des inscriptions
     #[Route('/inscriptions', name: 'post_inscriptions', methods: ['POST'])]
     public function postInscriptions(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
+        // Vérifier si les données sont valides
         if (empty($data)) {
             return new JsonResponse(['error' => 'Données invalides'], JsonResponse::HTTP_BAD_REQUEST);
         }
-
+        // Vérifier si les champs requis sont présents
         foreach ($data as $item) {
             $inscription = new Inscription();
             $stagiaire = $entityManager->getReference('App\Entity\Stagiaire', $item['id']);
@@ -88,19 +93,19 @@ class InscriptionController extends AbstractController
         $entityManager->flush();
         return new JsonResponse(['message' => 'Inscriptions enregistrées avec succès'], JsonResponse::HTTP_CREATED);
     }
-
+    // Route pour supprimer des inscriptions
     #[Route('/inscriptions', name: 'delete_inscriptions', methods: ['DELETE'])]
     public function deleteInscriptions(Request $request, EntityManagerInterface $entityManager, InscriptionRepository $inscriptionRepository): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-
+        // Vérifier si les données sont valides
         if (empty($data) || !isset($data['ids']) || !isset($data['id_session'])) {
             return new JsonResponse(['error' => 'Données invalides'], JsonResponse::HTTP_BAD_REQUEST);
         }
-
+        // Vérifier si les IDs sont présents
         $ids = $data['ids'];
         $id_session = $data['id_session'];
-
+        // Vérifier si l'ID de session est valide
         foreach ($ids as $id) {
             $inscription = $inscriptionRepository->findOneBy([
                 'stagiaire' => $id,
@@ -115,7 +120,7 @@ class InscriptionController extends AbstractController
         $entityManager->flush();
         return new JsonResponse(['message' => 'Inscriptions supprimées avec succès'], JsonResponse::HTTP_OK);
     }
-
+    // Route pour ajouter une inscription
     #[Route('/inscriptions/add', name: 'add_inscription', methods: ['POST'])]
     public function addInscription(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
     {

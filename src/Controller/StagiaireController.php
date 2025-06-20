@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Response; // Ajoutez cette ligne pour impor
 
 class StagiaireController extends AbstractController
 {
+    // Route pour récupérer tous les stagiaires
     #[Route('/stagiaires', name: 'get_stagiaires', methods: ['GET'])]
     public function getStagiaires(StagiaireRepository $stagiaireRepository): JsonResponse
     {
@@ -39,7 +40,7 @@ class StagiaireController extends AbstractController
         // Retourner les stagiaires en JSON
         return new JsonResponse($data);
     }
-
+    // Route pour récupérer un stagiaire par ID
     #[Route('/stagiaires/update/{id}', name: 'update_stagiaire', methods: ['POST'])]
     public function updateStagiaire(
         int $id,
@@ -117,7 +118,7 @@ class StagiaireController extends AbstractController
 
         return new JsonResponse(['message' => 'Stagiaire mis à jour et inscriptions ajoutées/supprimées si nécessaire'], JsonResponse::HTTP_OK);
     }
-
+    // Route pour ajouter un stagiaire et son inscription à une session
     #[Route('/stagiaires', name: 'add_stagiaire', methods: ['POST'])]
     public function addStagiaire(
         Request $request,
@@ -179,17 +180,17 @@ class StagiaireController extends AbstractController
         // Retourner une réponse JSON
         return new JsonResponse(['message' => 'Stagiaire supprimé avec succès'], JsonResponse::HTTP_OK);
     }
-
+    // Route pour importer des stagiaires depuis un fichier JSON
     #[Route('/stagiaires/import', name: 'import_stagiaires', methods: ['POST'])]
     public function importStagiaires(Request $request, EntityManagerInterface $entityManager, SessionFormationRepository $sessionFormationRepository): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
-
+            // Vérifier si le JSON est valide
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return new JsonResponse(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
             }
-
+            // Vérifier si les données contiennent des stagiaires
             foreach ($data as $traineeData) {
                 $stagiaire = new Stagiaire();
                 $stagiaire->setPrenomStagiaire($traineeData['prenom_stagiaire']);
@@ -200,7 +201,7 @@ class StagiaireController extends AbstractController
                 $stagiaire->setFonctionStagiaire($traineeData['fonction_stagiaire'] ?? null);
 
                 $entityManager->persist($stagiaire);
-
+                // Vérifier si des sessions sont associées
                 if (isset($traineeData['sessions']) && is_array($traineeData['sessions'])) {
                     foreach ($traineeData['sessions'] as $sessionData) {
                         $session = $sessionFormationRepository->find($sessionData['id']);
@@ -213,7 +214,7 @@ class StagiaireController extends AbstractController
                     }
                 }
             }
-
+            // Enregistrer les stagiaires et inscriptions en base de données
             $entityManager->flush();
 
             return new JsonResponse(['message' => 'Stagiaires importés avec succès'], Response::HTTP_OK);
@@ -222,6 +223,7 @@ class StagiaireController extends AbstractController
         }
     }
 
+    // Route pour mettre à jour les sessions des stagiaires
     #[Route('/stagiaires/update-sessions', name: 'update_stagiaire_sessions', methods: ['POST'])]
     public function updateStagiaireSessions(
         Request $request,
@@ -234,15 +236,15 @@ class StagiaireController extends AbstractController
         if (json_last_error() !== JSON_ERROR_NONE) {
             return new JsonResponse(['error' => 'Invalid JSON data'], Response::HTTP_BAD_REQUEST);
         }
-
+        // Vérifier que les données contiennent des stagiaires et une session
         $trainees = $data['trainees'];
         $sessionId = $data['sessionId'];
-
+        
         $session = $sessionFormationRepository->find($sessionId);
         if (!$session) {
             return new JsonResponse(['error' => 'Session non trouvée'], Response::HTTP_NOT_FOUND);
         }
-
+        // Parcourir les stagiaires et mettre à jour leurs inscriptions
         foreach ($trainees as $traineeId) {
             $stagiaire = $stagiaireRepository->find($traineeId);
             if (!$stagiaire) {

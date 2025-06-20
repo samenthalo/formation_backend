@@ -21,30 +21,31 @@ use App\Entity\Template;
 
 class ConventionController extends AbstractController
 {
-#[Route('/convention/all', name: 'get_all_conventions', methods: ['GET'])]
-public function getAllConventions(EntityManagerInterface $entityManager): JsonResponse
-{
-    $conventions = $entityManager->getRepository(Convention::class)->findAll();
+    // Route pour récupérer toutes les conventions
+    #[Route('/convention/all', name: 'get_all_conventions', methods: ['GET'])]
+    public function getAllConventions(EntityManagerInterface $entityManager): JsonResponse
+    {
+        $conventions = $entityManager->getRepository(Convention::class)->findAll();
 
-    $data = [];
+        $data = [];
+        // Parcourir les conventions et préparer les données pour la réponse
+        foreach ($conventions as $convention) {
+            $idSession = $convention->getIdSession(); 
+            $session = $entityManager->getRepository(SessionFormation::class)->find($idSession);
 
-    foreach ($conventions as $convention) {
-        $idSession = $convention->getIdSession(); // ici, c'est un entier
-        $session = $entityManager->getRepository(SessionFormation::class)->find($idSession);
+            $data[] = [
+                'id' => $convention->getId(),
+                'idSession' => $idSession,
+                'titreSession' => $session ? $session->getTitre() : null,
+                'cheminFichier' => $convention->getCheminFichier(),
+                'dateGeneration' => $convention->getDateGeneration()->format('Y-m-d H:i:s'),
+            ];
+        }
 
-        $data[] = [
-            'id' => $convention->getId(),
-            'idSession' => $idSession,
-            'titreSession' => $session ? $session->getTitre() : null,
-            'cheminFichier' => $convention->getCheminFichier(),
-            'dateGeneration' => $convention->getDateGeneration()->format('Y-m-d H:i:s'),
-        ];
+        return new JsonResponse($data);
     }
-
-    return new JsonResponse($data);
-}
-
-
+    
+    // Route pour récupérer une convention par ID de session
     #[Route('/convention/prefill/{idSessionFormation}', name: 'prefill_convention', methods: ['GET'])]
     public function getPrefillData(int $idSessionFormation, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -61,7 +62,7 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
         $creneaux = $entityManager->getRepository(SessionCreneau::class)->findBy([
             'sessionFormation' => $sessionFormation
         ]);
-
+        // Préparer les données des créneaux
         $creneauxData = array_map(function ($creneau) {
             return [
                 'jour' => $creneau->getJour()->format('Y-m-d'),
@@ -70,11 +71,11 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
                 'formateur' => $creneau->getFormateur() ? $creneau->getFormateur()->getNom() : null
             ];
         }, $creneaux);
-
+        // Récupérer les inscriptions pour la session
         $inscriptions = $entityManager->getRepository(Inscription::class)->findBy([
             'sessionFormation' => $sessionFormation
         ]);
-
+        // Préparer les données des participants
         $participantsData = [];
         foreach ($inscriptions as $inscription) {
             $stagiaire = $inscription->getStagiaire();
@@ -88,7 +89,7 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
                 ];
             }
         }
-
+        // Préparer la réponse avec les données de la formation et de la session
         return $this->json([
             'titreFormation' => $formation->getTitre(),
             'descriptionFormation' => $formation->getDescription(),
@@ -109,85 +110,86 @@ public function getAllConventions(EntityManagerInterface $entityManager): JsonRe
     }
 
 
-#[Route('/convention/upload', name: 'upload_convention_pdf', methods: ['POST'])]
-public function uploadConventionPdf(Request $request, EntityManagerInterface $entityManager): JsonResponse
-{
-    // Vérifiez si la requête contient des fichiers
-    if (!$request->files->count()) {
-        return new JsonResponse(['error' => 'Aucun fichier envoyé'], Response::HTTP_BAD_REQUEST);
-    }
+    #[Route('/convention/upload', name: 'upload_convention_pdf', methods: ['POST'])]
+    public function uploadConventionPdf(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Vérifiez si la requête contient des fichiers
+        if (!$request->files->count()) {
+            return new JsonResponse(['error' => 'Aucun fichier envoyé'], Response::HTTP_BAD_REQUEST);
+        }
+        // Récupérer le fichier et l'ID de session
+        $uploadedFile = $request->files->get('file');
+        $sessionId = $request->request->get('sessionId');
 
-    $uploadedFile = $request->files->get('file');
-    $sessionId = $request->request->get('sessionId');
+        // Log des données reçues
+        error_log('File: ' . ($uploadedFile ? $uploadedFile->getClientOriginalName() : 'No file'));
+        error_log('Session ID: ' . ($sessionId ?? 'No session ID'));
 
-    // Log des données reçues
-    error_log('File: ' . ($uploadedFile ? $uploadedFile->getClientOriginalName() : 'No file'));
-    error_log('Session ID: ' . ($sessionId ?? 'No session ID'));
-
-    if (!$uploadedFile) {
-        return new JsonResponse(['error' => 'Aucun fichier envoyé'], Response::HTTP_BAD_REQUEST);
-    }
-
-    if (empty($sessionId)) {
-        return new JsonResponse(['error' => 'ID de session manquant'], Response::HTTP_BAD_REQUEST);
-    }
-
-    $directory = $this->getParameter('kernel.project_dir') . '/public/uploads/conventions/';
-
-    if (!file_exists($directory)) {
-        mkdir($directory, 0777, true);
-    }
-
-    // Utilisez le nom de fichier original
-    $originalFileName = $uploadedFile->getClientOriginalName();
-
-    // Optionnel : Nettoyez le nom de fichier pour éviter les problèmes de sécurité
-    $newFileName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $originalFileName);
-
-    try {
-        $uploadedFile->move($directory, $newFileName);
-
-        $session = $entityManager->getRepository(SessionFormation::class)->find($sessionId);
-
-        if (!$session) {
-            return new JsonResponse(['error' => 'Session non trouvée'], Response::HTTP_BAD_REQUEST);
+        if (!$uploadedFile) {
+            return new JsonResponse(['error' => 'Aucun fichier envoyé'], Response::HTTP_BAD_REQUEST);
         }
 
-        $convention = new Convention();
-        $convention->setIdSession($session->getIdSession());
-        $convention->setCheminFichier('uploads/conventions/' . $newFileName);
-        $convention->setDateGeneration(new \DateTime());
+        if (empty($sessionId)) {
+            return new JsonResponse(['error' => 'ID de session manquant'], Response::HTTP_BAD_REQUEST);
+        }
 
-        $entityManager->persist($convention);
+        $directory = $this->getParameter('kernel.project_dir') . '/public/uploads/conventions/';
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        // Utilisez le nom de fichier original
+        $originalFileName = $uploadedFile->getClientOriginalName();
+
+        // Optionnel : Nettoyez le nom de fichier pour éviter les problèmes de sécurité
+        $newFileName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $originalFileName);
+
+        try {
+            $uploadedFile->move($directory, $newFileName);
+
+            $session = $entityManager->getRepository(SessionFormation::class)->find($sessionId);
+
+            if (!$session) {
+                return new JsonResponse(['error' => 'Session non trouvée'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $convention = new Convention();
+            $convention->setIdSession($session->getIdSession());
+            $convention->setCheminFichier('uploads/conventions/' . $newFileName);
+            $convention->setDateGeneration(new \DateTime());
+
+            $entityManager->persist($convention);
+            $entityManager->flush();
+
+            return new JsonResponse([
+                'file' => $newFileName
+            ]);
+
+        } catch (FileException $e) {
+            return new JsonResponse(['error' => 'Échec de l\'upload du fichier: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+    // Route pour supprimer une convention
+    #[Route('/convention/delete/{id}', name: 'delete_convention', methods: ['DELETE'])]
+    public function deleteConvention(int $id, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $convention = $entityManager->getRepository(Convention::class)->find($id);
+
+        if (!$convention) {
+            return new JsonResponse(['error' => 'Convention non trouvée'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Optionnel : suppression du fichier physique s’il existe
+        $filePath = $this->getParameter('kernel.project_dir') . '/public/' . $convention->getCheminFichier();
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        $entityManager->remove($convention);
         $entityManager->flush();
 
-        return new JsonResponse([
-            'file' => $newFileName
-        ]);
-
-    } catch (FileException $e) {
-        return new JsonResponse(['error' => 'Échec de l\'upload du fichier: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        return new JsonResponse(['message' => 'Convention supprimée avec succès']);
     }
-}
-#[Route('/convention/delete/{id}', name: 'delete_convention', methods: ['DELETE'])]
-public function deleteConvention(int $id, EntityManagerInterface $entityManager): JsonResponse
-{
-    $convention = $entityManager->getRepository(Convention::class)->find($id);
-
-    if (!$convention) {
-        return new JsonResponse(['error' => 'Convention non trouvée'], Response::HTTP_NOT_FOUND);
-    }
-
-    // Optionnel : suppression du fichier physique s’il existe
-    $filePath = $this->getParameter('kernel.project_dir') . '/public/' . $convention->getCheminFichier();
-    if (file_exists($filePath)) {
-        unlink($filePath);
-    }
-
-    $entityManager->remove($convention);
-    $entityManager->flush();
-
-    return new JsonResponse(['message' => 'Convention supprimée avec succès']);
-}
 
 }
