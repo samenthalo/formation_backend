@@ -13,7 +13,7 @@ class Formateur
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: "integer")]
+    #[ORM\Column(name: "id_formateur", type: "integer")]
     private ?int $id_formateur = null;
 
     #[ORM\Column(type: "string", length: 255)]
@@ -57,6 +57,10 @@ class Formateur
     public function __construct()
 {
     $this->sessions = new ArrayCollection();
+}
+    public function getId(): ?int
+{
+    return $this->id_formateur;
 }
     public function getIdFormateur(): ?int
     {

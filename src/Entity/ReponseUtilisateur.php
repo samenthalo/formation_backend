@@ -18,12 +18,12 @@ class ReponseUtilisateur
     private ?Question $question = null;
 
     #[ORM\ManyToOne(targetEntity: Stagiaire::class)]
-    #[ORM\JoinColumn(name: "id_stagiaire", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    #[ORM\JoinColumn(name: "id_stagiaire", referencedColumnName: "id_stagiaire", nullable: true, onDelete: "SET NULL")]
     private ?Stagiaire $stagiaire = null;
 
-    #[ORM\ManyToOne(targetEntity: Formateur::class)]
-    #[ORM\JoinColumn(name: "id_formateur", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
-    private ?Formateur $formateur = null;
+    #[ORM\ManyToOne(targetEntity: Reponse::class)]
+    #[ORM\JoinColumn(name: "id_reponse", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    private ?Reponse $reponsePredefinie = null;
 
     #[ORM\Column(type: "text", nullable: true)]
     private ?string $reponse = null;
@@ -68,6 +68,17 @@ class ReponseUtilisateur
     public function setFormateur(?Formateur $formateur): self
     {
         $this->formateur = $formateur;
+        return $this;
+    }
+
+    public function getReponsePredefinie(): ?Reponse
+    {
+        return $this->reponsePredefinie;
+    }
+
+    public function setReponsePredefinie(?Reponse $reponsePredefinie): self
+    {
+        $this->reponsePredefinie = $reponsePredefinie;
         return $this;
     }
 

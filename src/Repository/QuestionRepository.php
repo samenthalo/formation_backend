@@ -14,4 +14,6 @@ class QuestionRepository extends ServiceEntityRepository
     }
 
     // Ajoute ici des méthodes personnalisées si nécessaire
+
+    
 }

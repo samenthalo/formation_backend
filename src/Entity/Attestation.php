@@ -1,10 +1,9 @@
 <?php
-// src/Entity/Attestation.php
 
 namespace App\Entity;
+
 use App\Entity\SessionFormation;
-
-
+use App\Entity\Stagiaire;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -13,18 +12,22 @@ class Attestation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type:"integer")]
+    #[ORM\Column(type: "integer")]
     private $id;
 
     #[ORM\ManyToOne(targetEntity: SessionFormation::class)]
     #[ORM\JoinColumn(name: "id_session", referencedColumnName: "id_session", nullable: false)]
     private $session;
 
-    #[ORM\Column(type:"string", length:255, nullable:true)]
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
     private $cheminFichier;
 
-    #[ORM\Column(type:"datetime")]
+    #[ORM\Column(type: "datetime")]
     private $dateGeneration;
+
+    #[ORM\ManyToOne(targetEntity: Stagiaire::class)]
+    #[ORM\JoinColumn(name: "id_stagiaire", referencedColumnName: "id_stagiaire", nullable: false)]
+    private $stagiaire;
 
     // Getters & setters
 
@@ -63,6 +66,17 @@ class Attestation
     public function setDateGeneration(\DateTimeInterface $dateGeneration): self
     {
         $this->dateGeneration = $dateGeneration;
+        return $this;
+    }
+
+    public function getStagiaire(): ?Stagiaire
+    {
+        return $this->stagiaire;
+    }
+
+    public function setStagiaire(Stagiaire $stagiaire): self
+    {
+        $this->stagiaire = $stagiaire;
         return $this;
     }
 }

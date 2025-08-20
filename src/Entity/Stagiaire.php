@@ -10,10 +10,11 @@ use Doctrine\Common\Collections\Collection;
 #[ORM\Entity(repositoryClass: StagiaireRepository::class)]
 class Stagiaire
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(type: "integer")]
-    private ?int $id_stagiaire = null;
+#[ORM\Id]
+#[ORM\GeneratedValue]
+#[ORM\Column(name: "id_stagiaire", type: "integer")]
+private ?int $id_stagiaire = null;
+
 
     #[ORM\Column(type: "string", length: 100)]
     private ?string $nom_stagiaire = null;
@@ -42,6 +43,10 @@ class Stagiaire
         $this->inscriptions = new ArrayCollection();
     }
 
+        public function getId(): ?int
+    {
+        return $this->id_stagiaire;
+    }
     // Getters & Setters pour les autres propriétés
     public function getIdStagiaire(): ?int
     {

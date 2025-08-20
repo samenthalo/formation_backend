@@ -1,12 +1,17 @@
-# see https://symfony.com/doc/current/reference/configuration/framework.html
+# Voir la doc : https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    session:
+        enabled: true
+        handler_id: null
+        cookie_secure: false  # Désactivé pour le développement
+        cookie_samesite: lax  # ou 'strict' selon vos besoins
+        cookie_httponly: true  # Gardé à true pour la sécurité
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
 
-    #esi: true
-    #fragments: true
+    # Si tu veux activer ESI ou les fragments plus tard :
+    # esi: true
+    # fragments: true
 
 when@test:
     framework:

@@ -1,8 +1,5 @@
 <?php
 // src/Controller/FormationController.php
-
-// src/Controller/FormationController.php
-
 namespace App\Controller;
 
 use App\Entity\Formation;
@@ -47,7 +44,6 @@ class FormationController extends AbstractController
     {
         $formations = $this->formationRepository->findAll();
         $jsonFormations = $this->serializer->serialize($formations, 'json', ['groups' => 'formation:read']);
-
         return new Response($jsonFormations, 200, ['Content-Type' => 'application/json']);
     }
 
@@ -56,7 +52,6 @@ class FormationController extends AbstractController
     public function show(Formation $formation): Response
     {
         $jsonFormation = $this->serializer->serialize($formation, 'json', ['groups' => 'formation:read']);
-
         return new Response($jsonFormation, 200, ['Content-Type' => 'application/json']);
     }
 
@@ -91,8 +86,7 @@ class FormationController extends AbstractController
         if ($file) {
             $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $safeFilename = $this->slugger->slug($originalFilename);
-            $newFilename = $safeFilename.'-'.uniqid().'.'.$file->guessExtension();
-
+            $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
             try {
                 $file->move(
                     $this->getParameter('uploads_directory'),
@@ -101,7 +95,6 @@ class FormationController extends AbstractController
             } catch (FileException $e) {
                 return new JsonResponse(['error' => 'Error uploading file'], 500);
             }
-
             $formation->setWelcomeBooklet($newFilename);
         }
 
@@ -120,114 +113,100 @@ class FormationController extends AbstractController
         $this->entityManager->flush();
 
         $jsonFormation = $this->serializer->serialize($formation, 'json', ['groups' => 'formation:read']);
-
         return new Response($jsonFormation, 201, ['Content-Type' => 'application/json']);
     }
 
     // Route pour mettre à jour une formation
     #[Route('/{id}', name: 'update', methods: ['PUT', 'POST'])]
-            public function update(Request $request, Formation $formation): Response
-        {
-            // Vérifie si la requête est en format form-data
-            $contentType = $request->headers->get('Content-Type');
-            error_log('Content-Type reçu: ' . $contentType);  // Log pour le type de contenu de la requête
+    public function update(Request $request, Formation $formation): Response
+    {
+        // Vérifie si la requête est en format form-data
+        $contentType = $request->headers->get('Content-Type');
+        error_log('Content-Type reçu: ' . $contentType);
 
-            // Si ce n'est pas du form-data, retourne une erreur 415
-            if (!str_contains($contentType, 'multipart/form-data')) {
-                error_log('Erreur: Content-Type non pris en charge');  // Log si type non supporté
-                return new Response('Unsupported Content-Type', 415);
-            }
-
-            // Récupère toutes les données du formulaire
-            $data = $request->request->all(); // pour form-data
-            error_log('Form Data reçu: ' . json_encode($data));  // Log pour les données du formulaire
-
-            // Débogue avant la mise à jour des données
-            error_log('Formation avant mise à jour: ' . json_encode($formation));  // Log avant la mise à jour
-
-            // Mise à jour des données de la formation
-            $formation->setTitre($data['titre'] ?? $formation->getTitre());
-            $formation->setDescription($data['description'] ?? $formation->getDescription());
-            $formation->setPrixUnitaireHt($data['prix_unitaire_ht'] ?? $formation->getPrixUnitaireHt());
-            $formation->setNbParticipantsMax($data['nb_participants_max'] ?? $formation->getNbParticipantsMax());
-            $formation->setEstActive($data['est_active'] ?? $formation->getEstActive());
-            $formation->setTypeFormation($data['type_formation'] ?? $formation->getTypeFormation());
-            $formation->setDureeHeures($data['duree_heures'] ?? $formation->getDureeHeures());
-            $formation->setCategorie($data['categorie'] ?? $formation->getCategorie());
-            $formation->setProgramme($data['programme'] ?? $formation->getProgramme());
-            $formation->setMultiJour($data['multi_jour'] ?? $formation->getMultiJour());
-            $formation->setCible($data['cible'] ?? $formation->getCible());
-            $formation->setMoyensPedagogiques($data['moyens_pedagogiques'] ?? $formation->getMoyensPedagogiques());
-            $formation->setPreRequis($data['pre_requis'] ?? $formation->getPreRequis());
-            $formation->setDelaiAcces($data['delai_acces'] ?? $formation->getDelaiAcces());
-            $formation->setSupportsPedagogiques($data['supports_pedagogiques'] ?? $formation->getSupportsPedagogiques());
-            $formation->setMethodesEvaluation($data['methodes_evaluation'] ?? $formation->getMethodesEvaluation());
-            $formation->setAccessible($data['accessible'] ?? $formation->getAccessible());
-            $formation->setTauxTva($data['taux_tva'] ?? $formation->getTauxTva());
-
-            // Débogue après la mise à jour
-            error_log('Formation après mise à jour: ' . json_encode($formation));  // Log après mise à jour
-
-            // Gestion du fichier welcomeBooklet
-            $file = $request->files->get('welcomeBooklet');
-            if ($file) {
-                error_log('Fichier welcomeBooklet reçu: ' . $file->getClientOriginalName());  // Log du nom du fichier
-
-                $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = $this->slugger->slug($originalFilename);
-                $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
-
-                // Débogue avant de déplacer le fichier
-                error_log('Déplacement du fichier vers: ' . $newFilename);  // Log avant déplacement du fichier
-
-                try {
-                    $file->move(
-                        $this->getParameter('uploads_directory'),
-                        $newFilename
-                    );
-                    error_log('Fichier téléchargé avec succès');  // Log succès du téléchargement
-                } catch (FileException $e) {
-                    error_log('Erreur de fichier: ' . $e->getMessage());  // Log en cas d'exception
-                    return new Response('Error uploading file', 500);
-                }
-
-                $formation->setWelcomeBooklet($newFilename);
-                error_log('Nom du fichier après téléchargement: ' . $newFilename);  // Log du nom du fichier téléchargé
-            } else {
-                error_log('Aucun fichier welcomeBooklet reçu');  // Log si aucun fichier n'est reçu
-            }
-
-            // Validation
-            $errors = $this->validator->validate($formation);
-            if (count($errors) > 0) {
-                error_log('Erreurs de validation: ' . (string) $errors);  // Log des erreurs de validation
-                return new Response('Validation errors: ' . (string) $errors, 400);
-            }
-
-            // Enregistrement en base
-            try {
-                error_log('Enregistrement dans la base de données...');
-                $this->entityManager->flush();
-                error_log('Enregistrement réussi');  // Log après succès du flush
-            } catch (\Exception $e) {
-                error_log('Erreur de flush: ' . $e->getMessage());  // Log en cas d'exception lors du flush
-                return new Response('Error while saving data: ' . $e->getMessage(), 500);
-            }
-
-            // Sérialisation de la formation
-            $jsonFormation = $this->serializer->serialize($formation, 'json', ['groups' => 'formation:read']);
-            error_log('Formation sérialisée en JSON: ' . $jsonFormation);  // Log de la sérialisation JSON
-
-            return new Response($jsonFormation, 200, ['Content-Type' => 'application/json']);
+        // Si ce n'est pas du form-data, retourne une erreur 415
+        if (!str_contains($contentType, 'multipart/form-data')) {
+            error_log('Erreur: Content-Type non pris en charge');
+            return new Response('Unsupported Content-Type', 415);
         }
-    // Route pour supprimer une formation
-            #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
-            public function delete(Formation $formation): Response
-            {
-                $this->entityManager->remove($formation);
-                $this->entityManager->flush();
 
-                return new Response(null, 204);
+        // Récupère toutes les données du formulaire
+        $data = $request->request->all();
+        error_log('Form Data reçu: ' . json_encode($data));
+
+        // Mise à jour des données de la formation
+        $formation->setTitre($data['titre'] ?? $formation->getTitre());
+        $formation->setDescription($data['description'] ?? $formation->getDescription());
+        $formation->setPrixUnitaireHt($data['prix_unitaire_ht'] ?? $formation->getPrixUnitaireHt());
+        $formation->setNbParticipantsMax($data['nb_participants_max'] ?? $formation->getNbParticipantsMax());
+        $formation->setEstActive($data['est_active'] ?? $formation->getEstActive());
+        $formation->setTypeFormation($data['type_formation'] ?? $formation->getTypeFormation());
+        $formation->setDureeHeures($data['duree_heures'] ?? $formation->getDureeHeures());
+        $formation->setCategorie($data['categorie'] ?? $formation->getCategorie());
+        $formation->setProgramme($data['programme'] ?? $formation->getProgramme());
+        $formation->setMultiJour($data['multi_jour'] ?? $formation->getMultiJour());
+        $formation->setCible($data['cible'] ?? $formation->getCible());
+        $formation->setMoyensPedagogiques($data['moyens_pedagogiques'] ?? $formation->getMoyensPedagogiques());
+        $formation->setPreRequis($data['pre_requis'] ?? $formation->getPreRequis());
+        $formation->setDelaiAcces($data['delai_acces'] ?? $formation->getDelaiAcces());
+        $formation->setSupportsPedagogiques($data['supports_pedagogiques'] ?? $formation->getSupportsPedagogiques());
+        $formation->setMethodesEvaluation($data['methodes_evaluation'] ?? $formation->getMethodesEvaluation());
+        $formation->setAccessible($data['accessible'] ?? $formation->getAccessible());
+        $formation->setTauxTva($data['taux_tva'] ?? $formation->getTauxTva());
+
+        // Gestion du fichier welcomeBooklet
+        $file = $request->files->get('welcomeBooklet');
+        if ($file) {
+            error_log('Fichier welcomeBooklet reçu: ' . $file->getClientOriginalName());
+            $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $safeFilename = $this->slugger->slug($originalFilename);
+            $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
+            error_log('Déplacement du fichier vers: ' . $newFilename);
+            try {
+                $file->move(
+                    $this->getParameter('uploads_directory'),
+                    $newFilename
+                );
+                error_log('Fichier téléchargé avec succès');
+            } catch (FileException $e) {
+                error_log('Erreur de fichier: ' . $e->getMessage());
+                return new Response('Error uploading file', 500);
             }
-}
+            $formation->setWelcomeBooklet($newFilename);
+            error_log('Nom du fichier après téléchargement: ' . $newFilename);
+        } else {
+            error_log('Aucun fichier welcomeBooklet reçu');
+        }
 
+        // Validation
+        $errors = $this->validator->validate($formation);
+        if (count($errors) > 0) {
+            error_log('Erreurs de validation: ' . (string) $errors);
+            return new Response('Validation errors: ' . (string) $errors, 400);
+        }
+
+        // Enregistrement en base
+        try {
+            error_log('Enregistrement dans la base de données...');
+            $this->entityManager->flush();
+            error_log('Enregistrement réussi');
+        } catch (\Exception $e) {
+            error_log('Erreur de flush: ' . $e->getMessage());
+            return new Response('Error while saving data: ' . $e->getMessage(), 500);
+        }
+
+        // Sérialisation de la formation
+        $jsonFormation = $this->serializer->serialize($formation, 'json', ['groups' => 'formation:read']);
+        error_log('Formation sérialisée en JSON: ' . $jsonFormation);
+        return new Response($jsonFormation, 200, ['Content-Type' => 'application/json']);
+    }
+
+    // Route pour supprimer une formation
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
+    public function delete(Formation $formation): Response
+    {
+        $this->entityManager->remove($formation);
+        $this->entityManager->flush();
+        return new Response(null, 204);
+    }
+}

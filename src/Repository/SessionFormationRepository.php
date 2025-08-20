@@ -30,5 +30,17 @@ class SessionFormationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findFormateurBySessionId(int $sessionId)
+{
+    return $this->createQueryBuilder('s')
+        ->join('s.formateur', 'f')
+        ->andWhere('s.id = :sessionId')
+        ->setParameter('sessionId', $sessionId)
+        ->select('f')
+        ->getQuery()
+        ->getOneOrNullResult();
+}
+
+
     
 }

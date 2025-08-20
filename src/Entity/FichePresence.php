@@ -3,8 +3,11 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\FichePresenceRepository;
+use App\Entity\Formateur;
+use App\Entity\SessionFormation;  // N'oublie pas d'importer l'entité
 
-#[ORM\Entity(repositoryClass: "App\Repository\FichePresenceRepository")]
+#[ORM\Entity(repositoryClass: FichePresenceRepository::class)]
 class FichePresence
 {
     #[ORM\Id]
@@ -12,8 +15,10 @@ class FichePresence
     #[ORM\Column(type: "integer")]
     private ?int $id = null;
 
-    #[ORM\Column(type: "integer")]
-    private int $id_session;
+    // On remplace id_session par une relation ManyToOne vers SessionFormation
+    #[ORM\ManyToOne(targetEntity: SessionFormation::class)]
+    #[ORM\JoinColumn(name: "id_session", referencedColumnName: "id_session", nullable: false)]
+    private ?SessionFormation $sessionFormation = null;
 
     #[ORM\Column(type: "string", length: 255)]
     private string $chemin_fichier;
@@ -21,21 +26,28 @@ class FichePresence
     #[ORM\Column(type: "datetime")]
     private \DateTimeInterface $date_generation;
 
-    // Getters and Setters
+    #[ORM\ManyToOne(targetEntity: Formateur::class, inversedBy: 'fichesPresence')]
+    #[ORM\JoinColumn(name: 'id_formateur', referencedColumnName: 'id_formateur', nullable: false)]
+    private ?Formateur $formateur = null;
+
+
+    // --- Getters and Setters ---
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getIdSession(): int
+    // Nouveau getter pour la session formation (objet)
+    public function getSessionFormation(): ?SessionFormation
     {
-        return $this->id_session;
+        return $this->sessionFormation;
     }
 
-    public function setIdSession(int $id_session): self
+    // Nouveau setter pour la session formation (objet)
+    public function setSessionFormation(?SessionFormation $sessionFormation): self
     {
-        $this->id_session = $id_session;
+        $this->sessionFormation = $sessionFormation;
         return $this;
     }
 
@@ -58,6 +70,17 @@ class FichePresence
     public function setDateGeneration(\DateTimeInterface $date_generation): self
     {
         $this->date_generation = $date_generation;
+        return $this;
+    }
+
+    public function getFormateur(): ?Formateur
+    {
+        return $this->formateur;
+    }
+
+    public function setFormateur(?Formateur $formateur): self
+    {
+        $this->formateur = $formateur;
         return $this;
     }
 }

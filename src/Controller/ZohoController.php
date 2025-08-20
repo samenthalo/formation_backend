@@ -41,6 +41,7 @@ class ZohoController extends AbstractController
             return new Response('Exception lors de la récupération des tokens : ' . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+    
     // Route pour créer une demande de signature
     #[Route('/zoho/request', name: 'create_signature_request', methods: ['POST'])]
     public function createSignatureRequest(Request $request): JsonResponse

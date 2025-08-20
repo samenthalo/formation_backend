@@ -1,6 +1,5 @@
 <?php
 // src/Controller/FormateurController.php
-
 namespace App\Controller;
 
 use App\Repository\FormateurRepository;
@@ -15,20 +14,20 @@ use App\Repository\SessionCreneauRepository;
 
 class FormateurController extends AbstractController
 {
+    // Route pour récupérer tous les formateurs
     #[Route('/formateur', name: 'get_all_formateurs', methods: ['GET'])]
     public function getAll(FormateurRepository $formateurRepository, SessionCreneauRepository $sessionCreneauRepository): JsonResponse
     {
         $formateurs = $formateurRepository->findAll();
-        
         $data = [];
-        
+
         foreach ($formateurs as $formateur) {
             $sessionsData = [];
-            
+
             foreach ($formateur->getSessions() as $session) {
                 // Récupérer les créneaux associés à cette session
                 $creneaux = $sessionCreneauRepository->findBy(['sessionFormation' => $session]);
-    
+
                 $creneauxData = [];
                 foreach ($creneaux as $creneau) {
                     $creneauxData[] = [
@@ -37,6 +36,7 @@ class FormateurController extends AbstractController
                         'heure_fin' => $creneau->getHeureFin()->format('H:i'),
                     ];
                 }
+
                 // Ajouter les données de la session
                 $sessionsData[] = [
                     'id_session' => $session->getIdSession(),
@@ -45,9 +45,10 @@ class FormateurController extends AbstractController
                     'lieu' => $session->getLieu(),
                     'nb_heures' => $session->getNbHeures(),
                     'nb_inscrits' => $session->getNbInscrits(),
-                    'creneaux' => $creneauxData, // Ajouter les créneaux ici
+                    'creneaux' => $creneauxData,
                 ];
             }
+
             // Ajouter les données du formateur
             $data[] = [
                 'id_formateur' => $formateur->getIdFormateur(),
@@ -65,15 +66,14 @@ class FormateurController extends AbstractController
                 'sessions' => $sessionsData,
             ];
         }
-        
+
         return $this->json($data);
     }
-    
-    
+
     // Route pour ajouter un formateur
     #[Route('/formateur', name: 'add_formateur', methods: ['POST'])]
     public function add(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
-    {   
+    {
         // Récupération des données du formulaire
         $nom = $request->request->get('nom');
         $prenom = $request->request->get('prenom');
@@ -81,13 +81,13 @@ class FormateurController extends AbstractController
         $telephone = $request->request->get('telephone');
         $specialites = $request->request->get('specialites');
         $bio = $request->request->get('bio');
-        $linkedin = $request->request->get('linkedin'); // Nouveau champ texte
-        $cvFile = $request->files->get('cv'); // Champ fichier (input type="file")
-    
+        $linkedin = $request->request->get('linkedin');
+        $cvFile = $request->files->get('cv');
+
         if (!$nom || !$prenom || !$email || !$telephone || !$specialites || !$bio) {
             return new JsonResponse(['message' => 'Données manquantes'], JsonResponse::HTTP_BAD_REQUEST);
         }
-    
+
         // Gérer l’upload du fichier CV
         $cvFilename = null;
         if ($cvFile) {
@@ -95,6 +95,7 @@ class FormateurController extends AbstractController
             $cvFilename = uniqid() . '_' . $cvFile->getClientOriginalName();
             $cvFile->move($uploadsDir, $cvFilename);
         }
+
         // Créer une nouvelle entité Formateur
         $formateur = new Formateur();
         $formateur->setNom($nom);
@@ -107,7 +108,7 @@ class FormateurController extends AbstractController
         $formateur->setCreeLe(new \DateTime());
         $formateur->setMisAJour(new \DateTime());
         $formateur->setLinkedin($linkedin);
-        $formateur->setCvPath($cvFilename); // Enregistre juste le nom du fichier
+        $formateur->setCvPath($cvFilename);
 
         // Validation des données
         $violations = $validator->validate($formateur);
@@ -118,9 +119,10 @@ class FormateurController extends AbstractController
             }
             return new JsonResponse(['errors' => $errors], JsonResponse::HTTP_BAD_REQUEST);
         }
-    
+
         $entityManager->persist($formateur);
         $entityManager->flush();
+
         // Retourner une réponse JSON avec les détails du formateur créé
         return new JsonResponse([
             'message' => 'Formateur ajouté avec succès',
@@ -140,18 +142,18 @@ class FormateurController extends AbstractController
             ]
         ], JsonResponse::HTTP_CREATED);
     }
-    
+
     // Route pour mettre à jour un formateur
     #[Route('/formateur/{id}', name: 'update_formateur', methods: ['POST'])]
     public function update(int $id, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, FormateurRepository $formateurRepository): JsonResponse
     {
         $formateur = $formateurRepository->find($id);
-    
+
         if (!$formateur) {
             return new JsonResponse(['message' => 'Formateur non trouvé'], JsonResponse::HTTP_NOT_FOUND);
         }
-    
-        // Récupération des données (si elles sont présentes)
+
+        // Récupération des données
         $nom = $request->request->get('nom');
         $prenom = $request->request->get('prenom');
         $email = $request->request->get('email');
@@ -159,9 +161,9 @@ class FormateurController extends AbstractController
         $specialites = $request->request->get('specialites');
         $bio = $request->request->get('bio');
         $estActif = $request->request->get('est_actif');
-        $linkedin = $request->request->get('linkedin'); // Nouveau champ
-        $cvFile = $request->files->get('cv'); // Nouveau champ fichier
-    
+        $linkedin = $request->request->get('linkedin');
+        $cvFile = $request->files->get('cv');
+
         // Mise à jour des champs si des valeurs sont fournies
         if ($nom) $formateur->setNom($nom);
         if ($prenom) $formateur->setPrenom($prenom);
@@ -170,21 +172,21 @@ class FormateurController extends AbstractController
         if ($specialites) $formateur->setSpecialites($specialites);
         if ($bio) $formateur->setBio($bio);
         if ($estActif !== null) $formateur->setEstActif(filter_var($estActif, FILTER_VALIDATE_BOOLEAN));
-        if ($linkedin) $formateur->setLinkedin($linkedin); // Mise à jour du champ linkedin
-    
+        if ($linkedin) $formateur->setLinkedin($linkedin);
+
         // Gérer l’upload du fichier CV si fourni
         if ($cvFile) {
             $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads';
             $cvFilename = uniqid() . '_' . $cvFile->getClientOriginalName();
             $cvFile->move($uploadsDir, $cvFilename);
-            $formateur->setCvPath($cvFilename); // Mise à jour du fichier CV
+            $formateur->setCvPath($cvFilename);
         }
-    
+
         $formateur->setMisAJour(new \DateTime());
-    
+
         // Validation
         $violations = $validator->validate($formateur);
-    
+
         if (count($violations) > 0) {
             $errors = [];
             foreach ($violations as $violation) {
@@ -192,10 +194,10 @@ class FormateurController extends AbstractController
             }
             return new JsonResponse(['errors' => $errors], JsonResponse::HTTP_BAD_REQUEST);
         }
-    
+
         // Enregistrement
         $entityManager->flush();
-    
+
         return new JsonResponse([
             'message' => 'Formateur mis à jour avec succès',
             'formateur' => [
@@ -214,13 +216,12 @@ class FormateurController extends AbstractController
             ]
         ]);
     }
-    
+
     // Route pour supprimer un formateur
     #[Route('/formateur/{id}', name: 'delete_formateur', methods: ['DELETE'])]
     public function delete(int $id, EntityManagerInterface $entityManager, FormateurRepository $formateurRepository): JsonResponse
     {
         $formateur = $formateurRepository->find($id);
-
         if (!$formateur) {
             return new JsonResponse(['message' => 'Formateur non trouvé'], JsonResponse::HTTP_NOT_FOUND);
         }
@@ -231,7 +232,35 @@ class FormateurController extends AbstractController
         return new JsonResponse(['message' => 'Formateur supprimé avec succès'], JsonResponse::HTTP_OK);
     }
 
+    // Route pour récupérer un formateur par email
+    #[Route('/formateur/email/{email}', name: 'formateur_by_email', methods: ['GET'])]
+    public function getFormateurByEmail(string $email, FormateurRepository $formateurRepository): JsonResponse
+    {
+        $formateur = $formateurRepository->findOneByEmail($email);
+        if (!$formateur) {
+            return new JsonResponse(['error' => 'Formateur non trouvé'], 404);
+        }
 
+        return new JsonResponse([
+            'id' => $formateur->getIdFormateur(),
+            'nom' => $formateur->getNom(),
+            'prenom' => $formateur->getPrenom(),
+            'email' => $formateur->getEmail(),
+        ]);
+    }
+
+    #[Route('/formateurs/emails/session/{idSession}', name: 'formateurs_emails_by_session', methods: ['GET'])]
+    public function getEmailsBySessionForFormateurs(int $idSession, FormateurRepository $formateurRepository): JsonResponse
+    {
+        // Récupérer tous les formateurs liés à la session
+        $formateurs = $formateurRepository->findBySessionId($idSession);
+
+        // Extraire uniquement les emails
+        $emails = array_map(fn($formateur) => $formateur->getEmail(), $formateurs);
+
+        return $this->json([
+            'sessionId' => $idSession,
+            'emails' => $emails,
+        ]);
+    }
 }
-
-
